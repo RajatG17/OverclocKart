@@ -1,10 +1,37 @@
+import logging
 import requests
 
-from flask import Flask, jsonify, abort, request
+from flask import Flask, jsonify, abort, request, Response
 from flask_sqlalchemy import SQLAlchemy
+from prometheus_client import Counter, generate_latest, CONTENT_TYPE_LATEST
+
+REQUEST_COUNT = Counter("order_requests_total", "Total requests to order", ["method", "endpoint", "http_status"])
 
 
 app = Flask(__name__)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+
+@app.before_request
+def log_request():
+    app.logger.info(f"-> {request.method} {request.path} {request.get_json(silent=True)}")
+
+@app.after_request
+def log_response(response):
+    app.logger.info(f"<- {request.method} {request.path} {response.status_code}")
+    return response
+
+@app.after_request
+def after_request(response):
+    REQUEST_COUNT.labels(request.method, request.path, response.status_code).inc()
+    return response
+
+@app.route('/metrics')
+def metrics():
+    return Response(generate_latest(), mimetype=CONTENT_TYPE_LATEST)
+
+@app.get('/health')
+def health():
+    return {"status": "ok"}
 
 ## Database configuration
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///orders.db'

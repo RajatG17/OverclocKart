@@ -1,7 +1,17 @@
 import httpx
+import logging
 
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
+from fastapi import FastAPI, HTTPException, Request
+from pydantic import BaseModel, confloat, conint
+from prometheus_client import Counter, generate_latest, CONTENT_TYPE_LATEST
+from requests import Response
+from starlette.middleware.base import BaseHTTPMiddleware
+
+REQUEST_COUNT = Counter("gateway_requests_total", "Total HTTP requests", ["method", "endpoint", "http_status"])
+
+# set up logging
+logger = logging.getLogger("api-gateway")
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
 app = FastAPI(
     title = "OverclocKart API Gateway",
@@ -9,14 +19,22 @@ app = FastAPI(
     version="0.1.0",
 )
 
-## Models for valiudating the request body
+class LoggingMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        logger.info(f"-> {request.method} {request.url.path}")
+        response = await call_next(request)
+        logger.info(f"<- {request.method} {request.url.path} {response.status_code}")
+        return response
+
+
+## Models for validating the request body
 class Product(BaseModel):
     name: str
-    price: float
+    price: confloat(gt=0)
 
 class Order(BaseModel):
-    product_id: int
-    quantity: int
+    product_id: conint(gt=0)
+    quantity: conint(gt=0)
 
 ## service urls
 CATALOG_URL = "http://127.0.0.1:5001/catalog"
@@ -24,6 +42,24 @@ ORDER_URL = "http://127.0.0.1:5002/order"
 
 # Async HTTP client
 client = httpx.AsyncClient()
+
+app.add_middleware(LoggingMiddleware)
+
+@app.middleware("http")
+async def prometheus_middleware(request: Request, call_next):
+    response = await call_next(request)
+    REQUEST_COUNT.labels(request.method, request.url.path, response.status_code).inc()
+    return response
+
+@app.get("/metrics")
+async def metrics():
+    return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
+
+
+
+@app.get("/health")
+async def health():
+    return {"status": "ok"}
 
 ## routes for catalog 
 @app.get('/products', response_model=list[Product])
