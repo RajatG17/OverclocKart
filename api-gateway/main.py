@@ -1,5 +1,6 @@
 import httpx
 import logging
+import os
 
 from fastapi import FastAPI, HTTPException, Request
 from pydantic import BaseModel, confloat, conint
@@ -37,8 +38,8 @@ class Order(BaseModel):
     quantity: conint(gt=0)
 
 ## service urls
-CATALOG_URL = "http://127.0.0.1:5001/catalog"
-ORDER_URL = "http://127.0.0.1:5002/order"
+CATALOG_URL = os.getenv("CATALOG_URL", "http://catalog-service:5001/products")
+ORDER_URL = os.getenv("ORDER_URL", "http://order-service:5002/orders")
 
 # Async HTTP client
 client = httpx.AsyncClient()
