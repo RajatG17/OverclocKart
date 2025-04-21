@@ -38,8 +38,13 @@ class Order(BaseModel):
     quantity: conint(gt=0)
 
 ## service urls
-CATALOG_URL = os.getenv("CATALOG_URL", "http://catalog-service:5001/products")
-ORDER_URL = os.getenv("ORDER_URL", "http://order-service:5002/orders")
+CATALOG_HOST = os.getenv("CATALOG_HOST", "127.0.0.1")
+CATALOG_PORT = os.getenv("CATALOG_PORT", "5001")
+ORDER_HOST   = os.getenv("ORDER_HOST",   "127.0.0.1")
+ORDER_PORT   = os.getenv("ORDER_PORT",   "5002")
+
+CATALOG_URL = f"http://{CATALOG_HOST}:{CATALOG_PORT}/catalog"
+ORDER_URL   = f"http://{ORDER_HOST}:{ORDER_PORT}/order"
 
 # Async HTTP client
 client = httpx.AsyncClient()

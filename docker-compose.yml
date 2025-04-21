@@ -1,17 +1,8 @@
 version: '3.8'
 
 services:
-  api-gateway:
-    build: ./api-gateway
-    ports:
-      - "8000:5000"
-    environment:
-      - CATALOG_URL=http://catalog-service:5001/catalog
-      - ORDER_URL=http://order-service:5002/order
-    depends_on:
-      - catalog-service
-      - order-service
-
+  # Define the services for the application
+  # Each service is a separate container
   catalog-service:
     build: ./catalog-service
     ports:
@@ -23,9 +14,27 @@ services:
     build: ./order-service
     ports:
       - "5002:5002"
+    environment:
+      - CATALOG_HOST=catalog-service     # DNS name provided by Compose
+      - CATALOG_PORT=5001
+    depends_on: [catalog-service]
     volumes:
       - orders-data:/app/orders.db
-  
+    
+  api-gateway:
+    build: ./api-gateway
+    ports:
+      - "8000:5000"
+    environment:
+      - CATALOG_HOST=catalog-service
+      - CATALOG_PORT=5001
+      - ORDER_HOST=order-service
+      - ORDER_PORT=5002
+    depends_on:
+      - catalog-service
+      - order-service
+
+# Define the volumes for persistent data storage  
 volumes:
   catalog-data:
   orders-data:

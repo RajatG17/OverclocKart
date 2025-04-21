@@ -1,9 +1,15 @@
 import logging
+import os
 import requests
 
 from flask import Flask, jsonify, abort, request, Response
 from flask_sqlalchemy import SQLAlchemy
 from prometheus_client import Counter, generate_latest, CONTENT_TYPE_LATEST
+
+# catalog service url
+CATALOG_HOST = os.getenv("CATALOG_HOST", "127.0.0.1")
+CATALOG_PORT = os.getenv("CATALOG_PORT", "5001")
+CATALOG_BASE = f"http://{CATALOG_HOST}:{CATALOG_PORT}/catalog"
 
 REQUEST_COUNT = Counter("order_requests_total", "Total requests to order", ["method", "endpoint", "http_status"])
 
@@ -71,7 +77,7 @@ def create_order():
     product_id = request.json['product_id']
     
     # calling catalog service to check if the product exists
-    catalog_url = f'http://127.0.0.1:5001/catalog/{product_id}'
+    catalog_url = f'{CATALOG_BASE}/{product_id}'
     response = requests.get(catalog_url)
     if response.status_code != 200:
         abort(404, description="Product not found in catalog")
@@ -104,4 +110,4 @@ def get_order(order_idx: int):
     return jsonify(order.as_dict())
 
 if __name__=="__main__":
-    app.run(host="127.0.0.1", port=5002, debug=True)
+    app.run(host="0.0.0.0", port=5002, debug=True)
