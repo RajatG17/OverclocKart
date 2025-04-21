@@ -1,5 +1,6 @@
 
 import logging
+import os
 
 from flask import Flask, jsonify, abort, request, Response
 from flask_sqlalchemy import SQLAlchemy
@@ -45,9 +46,8 @@ def _hello_world():
 # ]
 
 ## Congiguring the SQLite database
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///catalog.db'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
+db_path = os.getenv("DB_PATH", "catalog.db")  # still works outside Docker
+app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{db_path}"
 db = SQLAlchemy(app)
 
 ## Defining the Product model

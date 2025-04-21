@@ -8,7 +8,9 @@ services:
     ports:
       - "5001:5001"
     volumes:
-      - catalog-data:/app/catalog.db
+      - catalog-data:/data
+    environment:
+      - DB_PATH=/data/catalog.db
     
   order-service:
     build: ./order-service
@@ -17,9 +19,10 @@ services:
     environment:
       - CATALOG_HOST=catalog-service     # DNS name provided by Compose
       - CATALOG_PORT=5001
+      - DB_PATH=/data/orders.db
     depends_on: [catalog-service]
     volumes:
-      - orders-data:/app/orders.db
+      - orders-data:/data
     
   api-gateway:
     build: ./api-gateway

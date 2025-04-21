@@ -40,9 +40,8 @@ def health():
     return {"status": "ok"}
 
 ## Database configuration
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///orders.db'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
+db_path = os.getenv("DB_PATH", "orders.db")  # still works outside Docker
+app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{db_path}"
 db = SQLAlchemy(app)
 
 # # In-memory storage for orders
