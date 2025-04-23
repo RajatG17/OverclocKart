@@ -29,9 +29,15 @@ class LoggingMiddleware(BaseHTTPMiddleware):
 
 
 ## Models for validating the request body
-class Product(BaseModel):
+class ProductBase(BaseModel):
     name: str
     price: confloat(gt=0)
+
+class ProductCreate(ProductBase):
+    pass
+
+class ProductOut(ProductBase):
+    id: int
 
 class Order(BaseModel):
     product_id: conint(gt=0)
@@ -61,21 +67,19 @@ async def prometheus_middleware(request: Request, call_next):
 async def metrics():
     return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
-
-
 @app.get("/health")
 async def health():
     return {"status": "ok"}
 
 ## routes for catalog 
-@app.get('/products', response_model=list[Product])
+@app.get('/products', response_model=list[ProductOut])
 async def list_products():
     response = await client.get(CATALOG_URL)
     response.raise_for_status()
     return response.json()
 
-@app.post("/products", response_model=Product, status_code=201)
-async def create_product(product: Product):
+@app.post("/products", response_model=ProductOut, status_code=201)
+async def create_product(product: ProductCreate):
     response = await client.post(CATALOG_URL, json=product.model_dump()) ### product.dict() is deprecated, so using model_dump()
     if response.status_code != 201:
         raise HTTPException(status_code=response.status_code, detail=response.text)
