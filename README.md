@@ -46,7 +46,7 @@ cd OvercolcKart
 docker compose up --build
 </pre>
 
-### Smkoe test
+### Smoke test
 <pre>
 # add a product
 curl -X POST http://localhost:5000/products \

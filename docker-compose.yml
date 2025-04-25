@@ -3,6 +3,17 @@ version: '3.8'
 services:
   # Define the services for the application
   # Each service is a separate container
+
+  auth-service:
+    build: ./auth-service
+    environment:
+      - JWT_SECRET=${JWT_SECRET}
+      - DB_PATH=/data/users.db
+    volumes:
+      - auth-data:/data
+    ports:
+      - "5003:5003"
+
   catalog-service:
     build: ./catalog-service
     ports:
@@ -29,6 +40,7 @@ services:
     ports:
       - "8000:5000"
     environment:
+      - JWT_SECRET=${JWT_SECRET}
       - CATALOG_HOST=catalog-service
       - CATALOG_PORT=5001
       - ORDER_HOST=order-service
@@ -36,8 +48,10 @@ services:
     depends_on:
       - catalog-service
       - order-service
+      - auth-service
 
 # Define the volumes for persistent data storage  
 volumes:
   catalog-data:
   orders-data:
+  auth-data:
