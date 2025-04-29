@@ -5,7 +5,7 @@ import os
 from fastapi import FastAPI, HTTPException, Request, Depends
 from fastapi.responses import JSONResponse
 from jose import jwt, JWTError
-from pydantic import BaseModel, confloat, conint
+from pydantic import BaseModel, confloat, conint, Field
 from prometheus_client import Counter, generate_latest, CONTENT_TYPE_LATEST
 from requests import Response
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -100,7 +100,7 @@ ORDER_PORT   = os.getenv("ORDER_PORT",   "5002")
 AUTH_HOST    = os.getenv("AUTH_HOST",    "127.0.0.1")
 AUTH_PORT    = os.getenv("AUTH_PORT",    "5003")
 
-
+# service urls
 CATALOG_URL = f"http://{CATALOG_HOST}:{CATALOG_PORT}/catalog"
 ORDER_URL   = f"http://{ORDER_HOST}:{ORDER_PORT}/order"
 AUTH_URL = f"http://{AUTH_HOST}:{AUTH_PORT}"
@@ -108,13 +108,13 @@ AUTH_URL = f"http://{AUTH_HOST}:{AUTH_PORT}"
 # Async HTTP client
 client = httpx.AsyncClient()
 
+# Add Middleware
 app.add_middleware(LoggingMiddleware)
 app.add_middleware(AuthMiddleware)
 
-
 # Role guard
 def require_admin(request: Request):
-    print(request.state.role)
+    # print(request.state.role)
     if request.state.role != "admin":
         raise HTTPException(status_code=403, detail="Admin privlege required")
 
@@ -132,10 +132,10 @@ async def metrics():
 async def health():
     return {"status": "ok"}
 
-
 ## routes for auth registration and login
 @app.post("/auth/register", status_code=201)
 async def gw_register(user: UserIn):
+    # Check if the user already exists        
     resp = await(client.post(f"{AUTH_URL}/register", json=user.model_dump()))
     return JSONResponse(resp.json(), status_code=resp.status_code)
 

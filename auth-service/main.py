@@ -3,7 +3,7 @@ import os, datetime
 from fastapi import FastAPI, HTTPException, Depends
 from jose import jwt, JWTError
 from passlib.context import CryptContext
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy import Column, Integer, String, create_engine, select
 from sqlalchemy.orm import declarative_base, Session
 
@@ -31,6 +31,7 @@ Base.metadata.create_all(engine)
 class UserIn(BaseModel):
     username: str
     password: str
+    role: str = Field("user", description="User role", pattern="^(user|admin)$")
 
 class TokenOut(BaseModel):
     access_token: str
@@ -60,7 +61,7 @@ def register(user: UserIn):
     if session.scalars(select(User).where(User.username == user.username)).first():
         raise HTTPException(status_code=409, detail="Username already taken")
     hashed = pwd_ctx.hash(user.password)
-    session.add(User(username=user.username, pwd_hash=hashed, role="customer"))
+    session.add(User(username=user.username, pwd_hash=hashed, role=user.role))
     session.commit()
     return {"msg": "registered successfully"}
 

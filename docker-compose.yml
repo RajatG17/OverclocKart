@@ -16,12 +16,13 @@ services:
 
   catalog-service:
     build: ./catalog-service
+    environment:
+      - DB_PATH=/data/catalog.db
     ports:
       - "5001:5001"
     volumes:
       - catalog-data:/data
-    environment:
-      - DB_PATH=/data/catalog.db
+    
     
   order-service:
     build: ./order-service
