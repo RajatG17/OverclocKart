@@ -5,7 +5,7 @@ Built to showcase distributed-systems skills: FastAPI gateway, Flask micro­serv
 
 ---
 ## Badges
-![CI](https://github.com/RajatG17/OverclocKart/actions/workflows/ci.yml/badge.svg?branch=main)
+![CI](https://github.com/RajatG17/OverclocKart/actions/workflows/ci.yml/badge.svg?branch=master)
 
 ## ✨  Features
 
