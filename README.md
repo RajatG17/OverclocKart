@@ -98,3 +98,4 @@ cd api-gateway && pip install -r requirements.txt && uvicorn main:app --reload
 3. PostgreSQL swap
 4. Github Actions CI -> Docker Hub
 
+![CI](https://github.com/<user>/<repo>/actions/workflows/ci.yml/badge.svg?branch=main)

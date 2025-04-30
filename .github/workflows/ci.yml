@@ -1,0 +1,70 @@
+name: CI
+
+on:
+    pull_request:
+    push:
+        branches: [main, "feature/**"]
+
+jobs:
+    test:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+            # set up Python
+            - uses: actions/setup-python@v5
+              with:
+                  python-version: 3.11
+
+            # install dependencies, caceh them
+            - uses: actions/cache@v4
+              with:
+                path: ~/.cache/pip
+                key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+            - name: Install backend deps
+              run: | 
+                pip install -r catalog-service/requirements.txt
+                pip install -r order-service/requirements.txt
+                pip install -r api-gateway/requirements.txt
+                pip install pytest httpx
+            - name: Run tests
+              run: pytest -q
+    
+    build-and-push:
+        needs: test
+        if: github.ref == 'reds/head/main'
+        runs-on: ubuntu-latest
+        permissions:
+            packages: write
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Set up QEMU (multi-arch, optional)
+              uses: docker/setup-qemu-action@v3
+
+            - name: Set up Docker Buildx
+              uses: docker/setup-buildx-action@v3
+
+            - name: Log in to GHCR
+              uses: docker/login-action@v3
+              with: 
+                registry: ghcr.io
+                usernname: ${{ github.actor }}
+                password: $ {{ secrets.CR_PAT }}
+
+            # Build and push each service image via a build matrix
+            - name: Build and push
+              uses: docker/build-push-action@v4
+              with:
+                context: .
+                file: ./Dockerfile
+                push: true
+                targets: |
+                    catalog-service
+                    order-service
+                    api-gateway
+                    auth-service
+                tags: |
+                    ghcr.io/${{ github.repository }}/{{target}}:${{ github.sha }}
+                    ghcr.io/${{ github.repository }}/{{target}}:latest
+
+
