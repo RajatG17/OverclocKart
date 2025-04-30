@@ -3,7 +3,7 @@ name: CI
 on:
     pull_request:
     push:
-        branches: [master, "feature/**"]
+        branches: [main, master, "feature/**"]
 
 jobs:
     test:
@@ -31,7 +31,7 @@ jobs:
     
     build-and-push:
         needs: test
-        if: github.ref == 'reds/head/master'
+        if: github.ref == 'refs/head/master' || github.ref == 'refs/head/main'
         runs-on: ubuntu-latest
         permissions:
             packages: write
