@@ -40,7 +40,7 @@ def health():
     return {"status": "ok"}
 
 ## Database configuration
-db_path = os.getenv("DB_PATH", "orders.db")  # still works outside Docker
+db_path = os.getenv("DB_PATH", "/data/orders.db")  # still works outside Docker
 app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{db_path}"
 db = SQLAlchemy(app)
 
