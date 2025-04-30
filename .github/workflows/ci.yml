@@ -48,26 +48,18 @@ jobs:
               uses: docker/login-action@v3
               with: 
                 registry: ghcr.io
-                usernname: ${{ github.actor }}
-                password: $ {{ secrets.CR_PAT }}
+                username: ${{ github.actor }}
+                password: ${{ secrets.CR_PAT }}
 
             # Build and push each service image via a build matrix
-            - name: Build and push
-              uses: docker/build-push-action@v4
-              with:
-                context: .
-                file: ./Dockerfile
-                push: true
-                run: |
-                    for svc in catalog-service order-service api-gateway auth-service; do
-                    docker build -t ghcr.io/${{ github.repository }}/$svc:latest $svc
-                    docker tag ghcr.io/${{ github.repository }}/$svc:latest \
-                            ghcr.io/${{ github.repository }}/$svc:${{ github.sha }}
-                    docker push ghcr.io/${{ github.repository }}/$svc:latest
-                    docker push ghcr.io/${{ github.repository }}/$svc:${{ github.sha }}
-                    done
-                tags: |
-                    ghcr.io/${{ github.repository }}/{{target}}:${{ github.sha }}
-                    ghcr.io/${{ github.repository }}/{{target}}:latest
+            - name: Build and push images
+              run: |
+                for svc in catalog-service order-service api-gateway auth-service; do
+                  docker build -t ghcr.io/${{ github.repository }}/$svc:latest $svc
+                  docker tag ghcr.io/${{ github.repository }}/$svc:latest \
+                          ghcr.io/${{ github.repository }}/$svc:${{ github.sha }}
+                  docker push ghcr.io/${{ github.repository }}/$svc:latest
+                  docker push ghcr.io/${{ github.repository }}/$svc:${{ github.sha }}
+                done
 
 
