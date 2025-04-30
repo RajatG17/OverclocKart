@@ -3,7 +3,7 @@ name: CI
 on:
     pull_request:
     push:
-        branches: [main, master, "feature/**"]
+        branches: [main,master, "feature/**"]
 
 jobs:
     test:
@@ -31,7 +31,7 @@ jobs:
     
     build-and-push:
         needs: test
-        if: github.ref == 'refs/head/master' || github.ref == 'refs/head/main'
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
         runs-on: ubuntu-latest
         permissions:
             packages: write
@@ -58,11 +58,14 @@ jobs:
                 context: .
                 file: ./Dockerfile
                 push: true
-                targets: |
-                    catalog-service
-                    order-service
-                    api-gateway
-                    auth-service
+                run: |
+                    for svc in catalog-service order-service api-gateway auth-service; do
+                    docker build -t ghcr.io/${{ github.repository }}/$svc:latest $svc
+                    docker tag ghcr.io/${{ github.repository }}/$svc:latest \
+                            ghcr.io/${{ github.repository }}/$svc:${{ github.sha }}
+                    docker push ghcr.io/${{ github.repository }}/$svc:latest
+                    docker push ghcr.io/${{ github.repository }}/$svc:${{ github.sha }}
+                    done
                 tags: |
                     ghcr.io/${{ github.repository }}/{{target}}:${{ github.sha }}
                     ghcr.io/${{ github.repository }}/{{target}}:latest
