@@ -9,7 +9,7 @@ def test_gateway_health(tmp_path):
     time.sleep(5) # wait for the server to start
 
     try:
-        r = httpx.get("http://localhost:8000/health")
+        r = httpx.get("http://localhost:5000/health")
         assert r.status_code == 200
     finally:
         proc.kill()
