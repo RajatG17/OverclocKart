@@ -52,14 +52,18 @@ jobs:
                 password: ${{ secrets.CR_PAT }}
 
             # Build and push each service image via a build matrix
-            - name: Build and push images
+            - name: Build & push images
+              env:
+                REPO: ${{ github.repository }}          # e.g. RajatG17/OverclocKart
               run: |
+                # to-lowercase (works in bash 4+)
+                REPO_LC=${REPO,,}         
                 for svc in catalog-service order-service api-gateway auth-service; do
-                  docker build -t ghcr.io/${{ github.repository }}/$svc:latest $svc
-                  docker tag ghcr.io/${{ github.repository }}/$svc:latest \
-                          ghcr.io/${{ github.repository }}/$svc:${{ github.sha }}
-                  docker push ghcr.io/${{ github.repository }}/$svc:latest
-                  docker push ghcr.io/${{ github.repository }}/$svc:${{ github.sha }}
+                  docker build -t ghcr.io/${REPO_LC}/${svc}:latest $svc
+                  docker tag   ghcr.io/${REPO_LC}/${svc}:latest \
+                              ghcr.io/${REPO_LC}/${svc}:${GITHUB_SHA}
+                  docker push  ghcr.io/${REPO_LC}/${svc}:latest
+                  docker push  ghcr.io/${REPO_LC}/${svc}:${GITHUB_SHA}
                 done
 
 
