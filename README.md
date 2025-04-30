@@ -4,33 +4,51 @@ A full-stack, containerised demo shop that sells PC parts.
 Built to showcase distributed-systems skills: FastAPI gateway, Flask micro­services, SQLite (swap-able), Docker Compose, observability, and (soon) JWT auth.
 
 ---
+## Badges
+![CI](https://github.com/RajatG17/OverclocKart/actions/workflows/ci.yml/badge.svg?branch=main)
 
 ## ✨  Features
 
 | Layer | Highlights |
 |-------|------------|
 | **API Gateway** | FastAPI, async proxying, Pydantic validation, structured logging, Swagger UI |
+| **Auth Service** | FastAPI, SQLite, bcrypt hashing, JWT issuance (`/register`,`/login`) |
 | **Catalog Service** | Flask + SQLAlchemy, CRUD for products |
 | **Order Service** | Flask + SQLAlchemy, inter-service call to Catalog, order lifecycle |
 | **Observability** | `/health` + `/metrics` endpoints, Prometheus counters, JSON logs |
-| **CI-Ready** | Dockerfiles for every component, one-shot `docker-compose up` |
-| **Planned Next** | Auth service issuing JWT, Role-based access, minimal React frontend |
+| **CI-Ready** | Github Actions: Pytest on every push/PR, Docker buildx builds 4 images, pushed to GHCR, one-shot `docker-compose up` |
+| **Planned Next** | mMnimal React frontend, Postgres switch |
 
 ---
 
 ## 🗺️  Architecture
 
 ```text
-┌──────────────┐        ┌──────────────────┐
-│   Frontend   │ ─────▶ │   API Gateway    │
-└──────────────┘        │  (FastAPI 8000)  │
-                        └───┬─────────┬────┘
-            REST /products  │         │  REST /orders
-                            │         │
-                 ┌──────────▼───┐ ┌───▼──────────┐
-                 │ Catalog Svc  │ │ Order Svc    │
-                 │  Flask 5001  │ │ Flask 5002   │
-                 └──────────────┘ └──────────────┘
+                ┌──────────────┐
+                │   Frontend   │
+                └─────┬────────┘
+                      │
+                      ▼
+           ┌──────────────────────┐       JWT
+           │      API Gateway     │<--------------┐
+           │  FastAPI :5000       │               │
+           └──┬──────────┬────────┘               │
+    REST /products   REST /orders                 │
+         │               │                        │
+         ▼               ▼                        │
+ ┌──────────────┐  ┌──────────────┐               │
+ │ Catalog Svc  │  │ Order Svc    │               │
+ │ Flask :5001  │  │ Flask :5002  │               │
+ └──────────────┘  └──────────────┘               │
+                      ▲                           │
+                      │  verify product           │
+                      └───────────────────────────┘
+           JWT issue/verify  ▲
+                             │
+                  ┌──────────────────┐
+                  │   Auth Service   │
+                  │ FastAPI :5003    │
+                  └──────────────────┘
 ```
 
 ## 🚀 Quick Start
@@ -43,6 +61,7 @@ Built to showcase distributed-systems skills: FastAPI gateway, Flask micro­serv
 <pre>
 git clone https://github.com/RajatG17/OverclocKart.git
 cd OvercolcKart
+# requires Docker 20.10+ and `JWT_SECRET` in .env
 docker compose up --build
 </pre>
 
@@ -72,6 +91,13 @@ cd order-service && pip install -r requirements.txt && python app.py
 cd api-gateway && pip install -r requirements.txt && uvicorn main:app --reload
 </pre>
 
+## CI/CD Pipeline
+
+* **CI** – GitHub Actions workflow [`ci.yml`](.github/workflows/ci.yml) triggers on every push & pull-request.  
+  * **Steps:** checkout → Python 3.11 setup → pip cache → Pytest smoke test → (if branch = `main`) Docker Buildx builds images for all four services and pushes them to **GitHub Container Registry**.
+* **Images** – automatically tagged `:latest` and `:<commit-sha>` under `ghcr.io/<your-handle>/<repo>/{api-gateway,catalog-service,order-service,auth-service}`.
+* **Runtime** – green badge at the top of this README shows pipeline status for `main`.
+
 ## Configuration
 
 | Variable | Default | Purpose |
@@ -93,9 +119,9 @@ cd api-gateway && pip install -r requirements.txt && uvicorn main:app --reload
 | Order | `GET /health` | `GET /metrics` |
 
 ## Roadmap
-1. Auth Service(JWT) & Gateway RBAC
+1. Auth Service(JWT) & Gateway RBAC ✅
 2. React + tailwind storefront
 3. PostgreSQL swap
-4. Github Actions CI -> Docker Hub
+4. Github Actions CI -> Docker Hub ✅
 
-![CI](https://github.com/<user>/<repo>/actions/workflows/ci.yml/badge.svg?branch=main)
+
