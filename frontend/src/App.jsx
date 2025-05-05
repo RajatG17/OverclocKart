@@ -3,6 +3,7 @@ import reactLogo from './assets/react.svg';
 import viteLogo from '/vite.svg';
 import './App.css';
 import api from "./api";
+import { AuthProvider } from "./auth";
 
 function App() {
   useEffect(() => {
@@ -10,6 +11,12 @@ function App() {
     .then(res => console.log("Products: ", res.data))
     .catch(err => console.error("API Error: ", err));
   }, []);
+
+  return (
+    <AuthProvider>
+      
+    </AuthProvider>
+  )
 
   // return (
   //   <>
