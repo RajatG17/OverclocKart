@@ -9,7 +9,8 @@ from pydantic import BaseModel, confloat, conint, Field
 from prometheus_client import Counter, generate_latest, CONTENT_TYPE_LATEST
 from requests import Response
 from starlette.middleware.base import BaseHTTPMiddleware
-
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 ## JWT
 JWT_SECRET = os.getenv("JWT_SECRET", "CHANGE_ME")
@@ -25,7 +26,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(
 app = FastAPI(
     title = "OverclocKart API Gateway",
     description="Route requests to the appropriate service",
-    version="0.2.0", ## 0.1.0 was the first version, 0.2.0 JWT was added
+    version="0.3.0", ## 0.1.0 was the first version, 0.2.0 JWT was added, 0.3.0 CORS middleware is added
 )
 
 class LoggingMiddleware(BaseHTTPMiddleware):
@@ -109,8 +110,17 @@ AUTH_URL = f"http://{AUTH_HOST}:{AUTH_PORT}"
 client = httpx.AsyncClient()
 
 # Add Middleware
+# cors middleware
+app.add_middleware(
+    CORSMiddleware, 
+    allow_origins=["http//localhost:5173"],
+    allow_credentials=True,
+    allow_methods=["*"], # allow GET, POST, OPTIONS etc.
+    allow_headers=["*"], # allow Content-Type, Authorization, etc.
+)
 app.add_middleware(LoggingMiddleware)
 app.add_middleware(AuthMiddleware)
+
 
 # Role guard
 def require_admin(request: Request):
