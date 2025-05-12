@@ -25,12 +25,23 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(
 
 app = FastAPI(
     title = "OverclocKart API Gateway",
-    description="Route requests to the appropriate service",
+    description="Route requests to the appropriate service + Auth",
     version="0.3.0", ## 0.1.0 was the first version, 0.2.0 JWT was added, 0.3.0 CORS middleware is added
+)
+
+# cors middleware
+app.add_middleware(
+    CORSMiddleware, 
+    allow_origins=["http://localhost:5173"],
+    allow_credentials=True,
+    allow_methods=["*"], # allow GET, POST, OPTIONS etc.
+    allow_headers=["*"], # allow Content-Type, Authorization, etc.
 )
 
 class LoggingMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
+        # if request.method == "OPTIONS":
+        #     return await call_next(request)
         logger.info(f"-> {request.method} {request.url.path}")
         response = await call_next(request)
         logger.info(f"<- {request.method} {request.url.path} {response.status_code}")
@@ -39,6 +50,9 @@ class LoggingMiddleware(BaseHTTPMiddleware):
 # Middleware 
 class AuthMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
+        if request.method == "OPTIONS":
+            return await call_next(request)
+
         public_paths = {
             "/health",
             "/docs", "openapi.json",
@@ -94,11 +108,11 @@ class Order(BaseModel):
     quantity: conint(gt=0)
 
 ## service urls
-CATALOG_HOST = os.getenv("CATALOG_HOST", "127.0.0.1")
+CATALOG_HOST = os.getenv("CATALOG_HOST", "catalog-service")
 CATALOG_PORT = os.getenv("CATALOG_PORT", "5001")
-ORDER_HOST   = os.getenv("ORDER_HOST",   "127.0.0.1")
+ORDER_HOST   = os.getenv("ORDER_HOST",   "order-service")
 ORDER_PORT   = os.getenv("ORDER_PORT",   "5002")
-AUTH_HOST    = os.getenv("AUTH_HOST",    "127.0.0.1")
+AUTH_HOST    = os.getenv("AUTH_HOST",    "auth-service")
 AUTH_PORT    = os.getenv("AUTH_PORT",    "5003")
 
 # service urls
@@ -110,17 +124,8 @@ AUTH_URL = f"http://{AUTH_HOST}:{AUTH_PORT}"
 client = httpx.AsyncClient()
 
 # Add Middleware
-# cors middleware
-app.add_middleware(
-    CORSMiddleware, 
-    allow_origins=["http//localhost:5173"],
-    allow_credentials=True,
-    allow_methods=["*"], # allow GET, POST, OPTIONS etc.
-    allow_headers=["*"], # allow Content-Type, Authorization, etc.
-)
 app.add_middleware(LoggingMiddleware)
 app.add_middleware(AuthMiddleware)
-
 
 # Role guard
 def require_admin(request: Request):
