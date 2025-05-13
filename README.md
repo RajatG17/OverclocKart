@@ -15,9 +15,10 @@ Built to showcase distributed-systems skills: FastAPI gateway, Flask micro­serv
 | **Auth Service** | FastAPI, SQLite, bcrypt hashing, JWT issuance (`/register`,`/login`) |
 | **Catalog Service** | Flask + SQLAlchemy, CRUD for products |
 | **Order Service** | Flask + SQLAlchemy, inter-service call to Catalog, order lifecycle |
-| **Observability** | `/health` + `/metrics` endpoints, Prometheus counters, JSON logs |
-| **CI-Ready** | Github Actions: Pytest on every push/PR, Docker buildx builds 4 images, pushed to GHCR, one-shot `docker-compose up` |
-| **Planned Next** | mMnimal React frontend, Postgres switch |
+| **Observability** | `/health` + `/metrics` endpoints, Prometheus counters, JSON logs [roxied by gateway and rendered in React UI] |
+| **CI/CD** | Github Actions: Pytest on every push/PR, Docker buildx builds 4 images, pushed to GHCR, one-shot `docker-compose up` |
+| **Frontend** | Minimal React frontend|
+| **Planned Text** | Postgres switch |
 
 ---
 
@@ -31,7 +32,7 @@ Built to showcase distributed-systems skills: FastAPI gateway, Flask micro­serv
                       ▼
            ┌──────────────────────┐       JWT
            │      API Gateway     │<--------------┐
-           │  FastAPI :5000       │               │
+           │  FastAPI :8000       │               │
            └──┬──────────┬────────┘               │
     REST /products   REST /orders                 │
          │               │                        │
@@ -49,7 +50,10 @@ Built to showcase distributed-systems skills: FastAPI gateway, Flask micro­serv
                   │   Auth Service   │
                   │ FastAPI :5003    │
                   └──────────────────┘
+     
 ```
+All services expose `/health` and `/metrics` endpoints.
+
 
 ## 🚀 Quick Start
 
@@ -63,22 +67,45 @@ git clone https://github.com/RajatG17/OverclocKart.git
 cd OvercolcKart
 # requires Docker 20.10+ and `JWT_SECRET` in .env
 docker compose up --build
+cd frontend
+npm install
+npm run dev
+# Frontend => http://localhost:5173
+# Gateway Swagger => http://localhost:8000/docs
 </pre>
 
 ### Smoke test
 <pre>
-# add a product
+# add a product (admin)
+curl -X POST http://localhost:5000/auth/register \
+     -H "Content-Type: application/json" \
+     -d '{"username":"admin","password":"pw","role":"admin"}'
+
+TOKEN=$(curl -s -X POST http://localhost:5000/auth/login \
+          -H "Content-Type: application/json" \
+          -d '{"username":"admin","password":"pw"}' | jq -r .access_token)
+
 curl -X POST http://localhost:5000/products \
+     -H "Authorization: Bearer $TOKEN" \
      -H "Content-Type: application/json" \
      -d '{"name":"GPU","price":399.99}'
 
-# list products
-curl http://localhost:5000/products
+# browse and buy as customer
+curl -X POST http://localhost:5000/auth/register \
+     -H "Content-Type: application/json" \
+     -d '{"username":"bob","password":"pw","role":"customer"}'
 
-# place an order
-curl -X POST http://localhost:5000/orders \
+TOKENC=$(curl -s -X POST http://localhost:5000/auth/login \
+           -H "Content-Type: application/json" \
+           -d '{"username":"bob","password":"pw"}' | jq -r .access_token)
+
+curl -X POST http://localhost:5173/orders \
+     -H "Authorization: Bearer $TOKENC" \
      -H "Content-Type: application/json" \
      -d '{"product_id":1,"quantity":2}'
+
+# view history in UI or via API
+curl -H "Authorization: Bearer $TOKENC" http://localhost:5000/orders
 </pre>
 
 ## 🛠️ Local Dev (no Docker)
@@ -89,14 +116,16 @@ cd catalog-service && pip install -r requirements.txt && python app.py
 cd order-service && pip install -r requirements.txt && python app.py
 # Gateway (environment variables point to localhost)
 cd api-gateway && pip install -r requirements.txt && uvicorn main:app --reload
+# Frontend
+cd frontend && npm install && npm run dev
 </pre>
 
 ## CI/CD Pipeline
 
 * **CI** – GitHub Actions workflow [`ci.yml`](.github/workflows/ci.yml) triggers on every push & pull-request.  
   * **Steps:** checkout → Python 3.11 setup → pip cache → Pytest smoke test → (if branch = `main`) Docker Buildx builds images for all four services and pushes them to **GitHub Container Registry**.
-* **Images** – automatically tagged `:latest` and `:<commit-sha>` under `ghcr.io/<your-handle>/<repo>/{api-gateway,catalog-service,order-service,auth-service}`.
-* **Runtime** – green badge at the top of this README shows pipeline status for `main`.
+* **Images** – automatically tagged `:latest` and `:<commit-sha>` under `ghcr.io/<your-handle>/<repo>/{api-gateway,catalog-service,order-service,auth-service,frontend}`.
+* **Runtime** – green badge at the top of this README shows pipeline status for `master`.
 
 ## Configuration
 
@@ -120,8 +149,9 @@ cd api-gateway && pip install -r requirements.txt && uvicorn main:app --reload
 
 ## Roadmap
 1. Auth Service(JWT) & Gateway RBAC ✅
-2. React + tailwind storefront
-3. PostgreSQL swap
-4. Github Actions CI -> Docker Hub ✅
+2. User‐specific Order History ✅
+3. React + tailwind storefront with Cypress tests
+4. PostgreSQL + Alembic swap
+5. Github Actions CI -> Docker Hub ✅
 
 
