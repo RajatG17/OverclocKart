@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./auth";
 import Login from "./pages/Login";
 import Products from "./pages/Products";
+import Orders from "./pages/Orders";
 import React, { JSX } from "react";
 
 function PrivateRoute({ children }: { children: JSX.Element }){
@@ -16,6 +17,7 @@ function App() {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/products" element={<PrivateRoute><Products /></PrivateRoute>} />
+        <Route path="/orders" element={<PrivateRoute><Orders /></PrivateRoute>} />
         <Route path="*" element={<Navigate to="/products" />} />
       </Routes>
       </BrowserRouter>

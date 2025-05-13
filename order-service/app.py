@@ -73,10 +73,8 @@ with app.app_context():
 def create_order():
     if not request.json or 'product_id' not in request.json or 'quantity' not in request.json:
         abort(400, description="Missing order data")
-
     
-    product_id = request.json['product_id']
-    
+    product_id = request.json['product_id']    
     # calling catalog service to check if the product exists
     catalog_url = f'{CATALOG_BASE}/{product_id}'
     response = requests.get(catalog_url)
@@ -84,16 +82,6 @@ def create_order():
         abort(404, description="Product not found in catalog")
     else:
         print(f"{product_id} found in catalog service")
-
-    # # Add the orrder to the in-memory storage
-    # new_order = {
-    #     'id': len(orders) +1,
-    #     "priduct_id": request.json['product_id'],
-    #     "quantity": request.json['quantity'],
-    #     "status": "created"
-    # }
-
-    # orders.append(new_order)
 
     ## Create and add ordert to the database
     username = request.headers.get("X-User")

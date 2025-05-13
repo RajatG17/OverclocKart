@@ -7,7 +7,7 @@ export default function Orders() {
     const [orders, setOrders] = useState<Order[]>([]);
 
     useEffect(() => {
-        api.get<Order[]>("/orders/${id}").then(res=> setOrders(res.data)).catch(console.error);
+        api.get<Order[]>("/orders").then(res=> setOrders(res.data)).catch(console.error);
     }, []);
 
     return (
