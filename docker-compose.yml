@@ -46,6 +46,8 @@ services:
       - CATALOG_PORT=5001
       - ORDER_HOST=order-service
       - ORDER_PORT=5002
+      - AUTH_HOST=auth-service
+      - AUTH_PORT=5003
     depends_on:
       - catalog-service
       - order-service

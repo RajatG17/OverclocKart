@@ -9,7 +9,8 @@ from pydantic import BaseModel, confloat, conint, Field
 from prometheus_client import Counter, generate_latest, CONTENT_TYPE_LATEST
 from requests import Response
 from starlette.middleware.base import BaseHTTPMiddleware
-
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 ## JWT
 JWT_SECRET = os.getenv("JWT_SECRET", "CHANGE_ME")
@@ -24,12 +25,23 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(
 
 app = FastAPI(
     title = "OverclocKart API Gateway",
-    description="Route requests to the appropriate service",
-    version="0.2.0", ## 0.1.0 was the first version, 0.2.0 JWT was added
+    description="Route requests to the appropriate service + Auth",
+    version="0.3.0", ## 0.1.0 was the first version, 0.2.0 JWT was added, 0.3.0 CORS middleware is added
+)
+
+# cors middleware
+app.add_middleware(
+    CORSMiddleware, 
+    allow_origins=["http://localhost:5173"],
+    allow_credentials=True,
+    allow_methods=["*"], # allow GET, POST, OPTIONS etc.
+    allow_headers=["*"], # allow Content-Type, Authorization, etc.
 )
 
 class LoggingMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
+        # if request.method == "OPTIONS":
+        #     return await call_next(request)
         logger.info(f"-> {request.method} {request.url.path}")
         response = await call_next(request)
         logger.info(f"<- {request.method} {request.url.path} {response.status_code}")
@@ -38,6 +50,9 @@ class LoggingMiddleware(BaseHTTPMiddleware):
 # Middleware 
 class AuthMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
+        if request.method == "OPTIONS":
+            return await call_next(request)
+
         public_paths = {
             "/health",
             "/docs", "openapi.json",
@@ -93,16 +108,17 @@ class Order(BaseModel):
     quantity: conint(gt=0)
 
 ## service urls
-CATALOG_HOST = os.getenv("CATALOG_HOST", "127.0.0.1")
+CATALOG_HOST = os.getenv("CATALOG_HOST", "catalog-service")
 CATALOG_PORT = os.getenv("CATALOG_PORT", "5001")
-ORDER_HOST   = os.getenv("ORDER_HOST",   "127.0.0.1")
+ORDER_HOST   = os.getenv("ORDER_HOST",   "order-service")
 ORDER_PORT   = os.getenv("ORDER_PORT",   "5002")
-AUTH_HOST    = os.getenv("AUTH_HOST",    "127.0.0.1")
+AUTH_HOST    = os.getenv("AUTH_HOST",    "auth-service")
 AUTH_PORT    = os.getenv("AUTH_PORT",    "5003")
 
 # service urls
 CATALOG_URL = f"http://{CATALOG_HOST}:{CATALOG_PORT}/catalog"
-ORDER_URL   = f"http://{ORDER_HOST}:{ORDER_PORT}/order"
+ORDER_LIST_URL   = f"http://{ORDER_HOST}:{ORDER_PORT}/orders"
+ORDER_DETAIL_URL = f"http://{ORDER_HOST}:{ORDER_PORT}/order"
 AUTH_URL = f"http://{AUTH_HOST}:{AUTH_PORT}"
 
 # Async HTTP client
@@ -162,15 +178,33 @@ async def create_product(product: ProductCreate, request: Request):
 ## routes for orders
 @app.get("/orders/{order_id}")
 async def get_order(order_id: int):
-    response = await client.get(f"{ORDER_URL}/{order_id}")
+    response = await client.get(f"{ORDER_LIST_URL}/{order_id}")
     if response.status_code != 200:
         raise HTTPException(status_code=response.status_code, detail=response.text)
     return response.json()
 
+@app.get("/orders", response_model=list[Order])
+async def list_orders(request: Request):
+    user = request.state.user
+    response = await client.get(
+        f"{ORDER_LIST_URL}",
+        headers=[("X-User", user)]
+    )
+
+    if response.status_code != 200:
+        raise HTTPException(status_code=response.status_code, detail=response.text)
+    return response.json()
+    
 @app.post("/orders", response_model=Order, status_code=201)
-async def create_order(order: Order):
-    response = await client.post(ORDER_URL, json=order.model_dump()) ### order.dict() is deprecated, so using model_dump()
+async def create_order(order: Order, request: Request):
+    user = request.state.user
+    response = await client.post(
+        ORDER_DETAIL_URL, 
+        json=order.model_dump(),
+        headers=[("X-User", user)]
+        ) ### order.dict() is deprecated, so using model_dump()
     if response.status_code != 201:
         raise HTTPException(status_code=response.status_code, detail=response.text)
     return response.json()
+
 
