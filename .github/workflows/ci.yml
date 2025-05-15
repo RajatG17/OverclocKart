@@ -27,12 +27,12 @@ jobs:
                 pip install -r api-gateway/requirements.txt
                 pip install pytest httpx
 
+            - name: Install docker-compose
+              run: sudo apt-get update && sudo apt-get install -y docker-compose
+
             - name: Run tests
               run: pytest -q
 
-            - name: Install docker-compose
-              run: sudo apt-get update && sudo apt-get install -y docker-compose
-              
             - name: Run Integration Tests
               run: |
                 pip install httpx pytest
