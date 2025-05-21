@@ -13,9 +13,12 @@ ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKENEXPIRE_MINUTES", 60))
 
 pwd_ctx = CryptContext(schemes=["bcrypt"], deprecated="auto")
 # Database setup
-DB_PATH = os.getenv("DB_PATH", "/data/users.db")
+# DB_PATH = os.getenv("DB_PATH", "/data/users.db")
 Base = declarative_base()
-engine = create_engine(f"sqlite:///{DB_PATH}", connect_args={"check_same_thread": False})
+# engine = create_engine(f"sqlite:///{DB_PATH}", connect_args={"check_same_thread": False})
+db_url = os.getenv("DATABASE_URL", "sqlite:////data/users.db")
+connect_args = {"check_same_thread": False} if db_url.startswith("sqlite") else {}
+engine = create_engine(db_url, connect_args=connect_args)
 session = Session(bind=engine)
 
 class User(Base):

@@ -3,12 +3,22 @@ version: '3.8'
 services:
   # Define the services for the application
   # Each service is a separate container
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: authdb
+      POSTGRES_USER: authuser
+      POSTGRES_PASSWORD: authpw
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
 
   auth-service:
     build: ./auth-service
     environment:
       - JWT_SECRET=${JWT_SECRET}
-      - DB_PATH=/data/users.db
+      - DATABASE_URL=postgresql+psycopg2://authuser:authpw@postgres:5432/authdb
     volumes:
       - auth-data:/data
     ports:
@@ -17,11 +27,13 @@ services:
   catalog-service:
     build: ./catalog-service
     environment:
-      - DB_PATH=/data/catalog.db
+      - DATABASE_URL=postgresql+psycopg2://authuser:authpw@postgres:5432/authdb
+    depends_on:
+      - postgres
     ports:
       - "5001:5001"
     volumes:
-      - catalog-data:/data
+      - catalog-data:/app/catalog.db
     
     
   order-service:
@@ -31,7 +43,7 @@ services:
     environment:
       - CATALOG_HOST=catalog-service     # DNS name provided by Compose
       - CATALOG_PORT=5001
-      - DB_PATH=/data/orders.db
+      - DATABASE_URL=postgresql+psycopg2://authuser:authpw@postgres:5432/authdb
     depends_on: [catalog-service]
     volumes:
       - orders-data:/data
@@ -48,6 +60,7 @@ services:
       - ORDER_PORT=5002
       - AUTH_HOST=auth-service
       - AUTH_PORT=5003
+      - DATABASE_URL=postgresql+psycopg2://svc_user:svc_pass@postgres:5432/authdb
     depends_on:
       - catalog-service
       - order-service
@@ -58,3 +71,4 @@ volumes:
   catalog-data:
   orders-data:
   auth-data:
+  postgres-data:

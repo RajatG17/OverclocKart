@@ -46,8 +46,13 @@ def _hello_world():
 # ]
 
 ## Congiguring the SQLite database
-db_path = os.getenv("DB_PATH", "/data/catalog.db")  # still works outside Docker
-app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{db_path}"
+# db_path = os.getenv("DB_PATH", "/data/catalog.db")  # still works outside Docker
+# app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{db_path}"
+# db = SQLAlchemy(app)
+
+## Setting Postgres database
+db_url = os.getenv("DATABASE_URL", "sqlite:////data/catalog.db")
+app.config['SQLALCHEMY_DATABASE_URI'] = db_url
 db = SQLAlchemy(app)
 
 ## Defining the Product model
