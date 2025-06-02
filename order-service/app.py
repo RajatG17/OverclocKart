@@ -40,8 +40,9 @@ def health():
     return {"status": "ok"}
 
 ## Database configuration
-db_path = os.getenv("DB_PATH", "/data/orders.db")  # still works outside Docker
-app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{db_path}"
+db_path = os.getenv("DB_PATH", "sqlite:////data/orders.db")  # still works outside Docker
+db_url = os.getenv("DATABASE_URL", db_path)
+app.config["SQLALCHEMY_DATABASE_URI"] = db_url
 db = SQLAlchemy(app)
 
 # # In-memory storage for orders
@@ -65,8 +66,8 @@ class Order(db.Model):
         }
 
 ## create database if it dosen;t exist
-with app.app_context():
-    db.create_all()
+# with app.app_context():
+#     db.create_all()
 
 # POST a new order
 @app.route('/order', methods=['POST'])

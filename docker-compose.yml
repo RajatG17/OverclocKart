@@ -3,12 +3,24 @@ version: '3.8'
 services:
   # Define the services for the application
   # Each service is a separate container
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_PASSWORD: rootpw
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./postgres-init/init-multiple-dbs.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
 
   auth-service:
     build: ./auth-service
     environment:
       - JWT_SECRET=${JWT_SECRET}
+      - DATABASE_URL=postgresql+psycopg2://authuser:authpw@postgres:5432/authdb
       - DB_PATH=/data/users.db
+    depends_on:
+      - postgres
     volumes:
       - auth-data:/data
     ports:
@@ -17,7 +29,10 @@ services:
   catalog-service:
     build: ./catalog-service
     environment:
+      - DATABASE_URL=postgresql+psycopg2://cataloguser:catalogpw@postgres:5432/catalogdb
       - DB_PATH=/data/catalog.db
+    depends_on:
+      - postgres
     ports:
       - "5001:5001"
     volumes:
@@ -31,6 +46,7 @@ services:
     environment:
       - CATALOG_HOST=catalog-service     # DNS name provided by Compose
       - CATALOG_PORT=5001
+      - DATABASE_URL=postgresql+psycopg2://orderuser:orderpw@postgres:5432/orderdb
       - DB_PATH=/data/orders.db
     depends_on: [catalog-service]
     volumes:
@@ -52,9 +68,17 @@ services:
       - catalog-service
       - order-service
       - auth-service
+  
+  # frontend:
+  #   build: ./frontend
+  #   depends_on:
+  #     - api-gateway
+  #   ports:
+  #     - "5173:80"
 
 # Define the volumes for persistent data storage  
 volumes:
+  pgdata:
   catalog-data:
   orders-data:
   auth-data:
