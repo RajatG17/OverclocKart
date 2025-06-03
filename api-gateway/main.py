@@ -170,6 +170,8 @@ async def list_products():
 ## route for product details
 @app.post("/products", dependencies=[Depends(require_admin)], response_model=ProductOut, status_code=201)
 async def create_product(product: ProductCreate, request: Request):
+    print(f"DEBUG: proxying to {CATALOG_URL}")
+
     response = await client.post(CATALOG_URL, json=product.model_dump()) ### product.dict() is deprecated, so using model_dump()
     if response.status_code != 201:
         raise HTTPException(status_code=response.status_code, detail=response.text)

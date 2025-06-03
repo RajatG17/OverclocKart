@@ -12,6 +12,12 @@ services:
       - ./postgres-init/init-multiple-dbs.sql:/docker-entrypoint-initdb.d/init.sql
     ports:
       - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U authuser -d authdb"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   auth-service:
     build: ./auth-service
@@ -20,9 +26,10 @@ services:
       - DATABASE_URL=postgresql+psycopg2://authuser:authpw@postgres:5432/authdb
       - DB_PATH=/data/users.db
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     volumes:
-      - auth-data:/data
+      - ./auth-service:/app
     ports:
       - "5003:5003"
 
@@ -32,11 +39,12 @@ services:
       - DATABASE_URL=postgresql+psycopg2://cataloguser:catalogpw@postgres:5432/catalogdb
       - DB_PATH=/data/catalog.db
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     ports:
       - "5001:5001"
     volumes:
-      - catalog-data:/data
+      - ./catalog-service:/app
     
     
   order-service:
@@ -48,9 +56,13 @@ services:
       - CATALOG_PORT=5001
       - DATABASE_URL=postgresql+psycopg2://orderuser:orderpw@postgres:5432/orderdb
       - DB_PATH=/data/orders.db
-    depends_on: [catalog-service]
+    depends_on: 
+      postgres: 
+        condition: service_healthy
+      catalog-service:
+        condition: service_started
     volumes:
-      - orders-data:/data
+      - ./order-service:/app
     
   api-gateway:
     build: ./api-gateway
@@ -65,10 +77,14 @@ services:
       - AUTH_HOST=auth-service
       - AUTH_PORT=5003
     depends_on:
-      - catalog-service
-      - order-service
-      - auth-service
+      catalog-service:
+        condition: service_started
+      order-service:
+        condition: service_started
+      auth-service:
+        condition: service_started
   
+  # TO IMPLEMENT: Uncomment to enable frontend service
   # frontend:
   #   build: ./frontend
   #   depends_on:

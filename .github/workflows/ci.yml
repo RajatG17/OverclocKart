@@ -30,6 +30,18 @@ jobs:
             - name: Install docker-compose
               run: sudo apt-get update && sudo apt-get install -y docker-compose
 
+            - name: Start Postgres for migrations
+              run: docker-compose up -d postgres
+            
+            - name: Run Auth migrations
+              run: docker-compose run --rm auth-service sh -c "alembic upgrade head"
+
+            - name: Run Catalog migrations
+              run: docker-compose run --rm catalog-service sh -c "alembic upgrade head"
+
+            - name: Run Order migrations
+              run: docker-compose run --rm order-service sh -c "alembic upgrade head"
+
             - name: Run tests
               run: pytest -q
 
