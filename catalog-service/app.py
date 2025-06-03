@@ -46,12 +46,14 @@ def _hello_world():
 # ]
 
 ## Congiguring the SQLite database
-db_path = os.getenv("DB_PATH", "/data/catalog.db")  # still works outside Docker
-app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{db_path}"
+db_path = os.getenv("DB_PATH", "sqlite:////data/catalog.db")  # still works outside Docker
+db_url = os.getenv("DATABASE_URL", db_path)
+app.config["SQLALCHEMY_DATABASE_URI"] = db_url
 db = SQLAlchemy(app)
 
 ## Defining the Product model
 class Product(db.Model):
+    __tablename__ = 'product'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(80), nullable=False)
     price = db.Column(db.Float, nullable=False)
@@ -64,8 +66,8 @@ class Product(db.Model):
         }
 
 # create database and table => runs during startup if the database does not exist
-with app.app_context():
-    db.create_all()
+# with app.app_context():
+#     db.create_all()
 
 ## GET all products
 @app.route('/catalog', methods=['GET'])

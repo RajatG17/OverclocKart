@@ -5,7 +5,8 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY app.py .
+COPY . .
+RUN chmod +x ./entrypoint.sh
 EXPOSE 5001
 
-CMD ["python", "app.py"]
+ENTRYPOINT [ "./entrypoint.sh" ]
